@@ -1,117 +1,129 @@
 import streamlit as st
 import os
-import json
 import base64
 from groq import Groq
 from gtts import gTTS
 
-# Page styling & Premium Orange/White Theme
-st.set_page_config(page_title="Nightside AI Realtime", page_icon="🍊", layout="centered")
+# --- 1. Premium Orange & White Styling ---
+st.set_page_config(page_title="Nightside AI Live", page_icon="🍊", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #FFFFFF; }
-    h1 { color: #FF6B00; font-weight: 800; text-align: center; }
+    h1 { color: #FF6B00; font-weight: 800; text-align: center; font-size: 2.8rem; }
     .status-box {
         background-color: #FFF0E6;
         border: 2px solid #FF6B00;
         padding: 15px;
-        border-radius: 10px;
+        border-radius: 12px;
         text-align: center;
         font-weight: bold;
         color: #333333;
+        font-size: 1.1rem;
+    }
+    .chat-card {
+        background-color: #F9FAFB;
+        border-left: 5px solid #FF6B00;
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 4px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>🍊 Nightside Ai Continuous Live Call</h1>", unsafe_allow_html=True)
-st.write("This system uses continuous streaming. No buttons to click after starting!")
+st.markdown("<h1>🍊 Nightside Ai Voice Call</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#666;'>Continuous Live Agent — Zero Buttons, No Delay Rola</p>", unsafe_allow_html=True)
+st.markdown("---")
 
+# --- 2. Security API Check ---
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
 
 if not GROQ_API_KEY:
-    st.error("Please add your GROQ_API_KEY in Streamlit Secrets.")
+    st.error("⚠️ Please add your GROQ_API_KEY in Streamlit Secrets.")
 else:
     client = Groq(api_key=GROQ_API_KEY)
 
-    # Simple session state to keep track of conversation
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = [
-            {"role": "system", "content": "You are a live phone voice agent for Nightside Ai. Keep responses extremely short, under 10 words. Speak naturally."}
-        ]
-
-    # Query params to handle background data transmission from HTML5 to Streamlit
+    # Browser se jo text aayega usay handle karne ke liye parameters
     query_params = st.query_params
-    if "user_audio_text" in query_params:
-        user_text = query_params["user_audio_text"]
+    
+    if "speech_text" in query_params:
+        user_text = query_params["speech_text"]
         
-        # Clear the param so it doesn't loop
+        # Immediate clear to prevent loop restart
         st.query_params.clear()
         
-        # Process through Groq
-        st.session_state.chat_history.append({"role": "user", "content": user_text})
-        
-        try:
-            chat_completion = client.chat.completions.create(
-                messages=st.session_state.chat_history,
-                model="llama-3.1-8b-instant"
-            )
-            ai_response = chat_completion.choices[0].message.content
-            st.session_state.chat_history.append({"role": "assistant", "content": ai_response})
+        if user_text.strip():
+            st.markdown(f"<div class='chat-card'>🗣️ **You said:** {user_text}</div>", unsafe_allow_html=True)
             
-            st.write(f"🗣️ **You:** {user_text}")
-            st.write(f"🤖 **Agent:** {ai_response}")
-            
-            # Generate Free TTS
-            tts = gTTS(text=ai_response, lang='en', tld='com')
-            tts.save("response.mp3")
-            
-            with open("response.mp3", "rb") as f:
-                audio_bytes = f.read()
-            audio_base64 = base64.b64encode(audio_bytes).decode()
-            
-            # Autoplay response back to user
-            st.markdown(f'<audio src="data:audio/mp3;base64,{audio_base64}" autoplay="true" />', unsafe_allow_html=True)
-            
-        except Exception as e:
-            st.error(f"Error: {e}")
+            with st.spinner("⚡ Agent is answering..."):
+                try:
+                    # AI Brain (Fastest Llama 3.1 Model)
+                    chat_completion = client.chat.completions.create(
+                        messages=[
+                            {"role": "system", "content": "You are a professional live phone receptionist for Nightside Ai software agency. Keep responses extremely short, max 10 words. Speak casually and naturally."},
+                            {"role": "user", "content": user_text}
+                        ],
+                        model="llama-3.1-8b-instant"
+                    )
+                    ai_response = chat_completion.choices[0].message.content
+                    
+                    st.markdown(f"<div class='chat-card'>🤖 **Agent:** {ai_response}</div>", unsafe_allow_html=True)
+                    
+                    # Unlimited Free TTS Voice
+                    tts = gTTS(text=ai_response, lang='en', tld='com')
+                    tts.save("response.mp3")
+                    
+                    with open("response.mp3", "rb") as f:
+                        audio_bytes = f.read()
+                    audio_base64 = base64.b64encode(audio_bytes).decode()
+                    
+                    # HTML5 Autoplay Hack (Bina button ke khud bolega)
+                    st.markdown(f'<audio src="data:audio/mp3;base64,{audio_base64}" autoplay="true" />', unsafe_allow_html=True)
+                    
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
-    # --- THE MAGIC TEXT/HTML INTERFACE FOR CONTINUOUS MIC ---
-    st.markdown('<div class="status-box">🎙️ System Status: Continuous Listening Active</div>', unsafe_allow_html=True)
+    # --- 3. Live Continuous Mic Component ---
+    st.markdown('<div class="status-box" id="box">🎙️ System Status: Listening Continually...</div>', unsafe_allow_html=True)
 
-    # HTML5 Web Speech API Component (100% Free, handles continuous mic activation)
+    # 100% Free Browser Web Speech Injection
     st.components.v1.html("""
-        <div style="text-align: center; margin-top: 20px;">
-            <p id="mic-indicator" style="color: #FF6B00; font-weight: bold;">🔴 Listening... Speak now without pressing buttons.</p>
+        <div style="text-align: center; font-family: sans-serif;">
+            <p id="indicator" style="color: #FF6B00; font-weight: bold; font-size: 18px;">🔴 Click anywhere on this white screen area once to activate mic loop!</p>
         </div>
         
         <script>
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.continuous = true;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false; // Processes block by block naturally
             recognition.interimResults = false;
             recognition.lang = 'en-US';
 
-            recognition.onstart = function() {
-                document.getElementById('mic-indicator').innerText = "🟢 Mic Live - Speak Naturally";
-                document.getElementById('mic-indicator').style.color = "#00cc44";
+            document.body.onclick = function() {
+                try {
+                    recognition.start();
+                    document.getElementById('indicator').innerText = "🟢 Mic Active - Speak Naturally Now";
+                    document.getElementById('indicator').style.color = "#10B981";
+                } catch(e) {
+                    // Already running
+                }
             };
 
+            // Auto trigger on load if permissions allow
+            try { recognition.start(); } catch(e){}
+
             recognition.onresult = function(event) {
-                const resultIndex = event.resultIndex;
-                const transcript = event.results[resultIndex][0].transcript;
+                const transcript = event.results[0][0].transcript;
                 
-                // Stream data straight into Streamlit URL parameters to force update
-                const url = new URL(window.parent.location.href);
-                url.searchParams.set('user_audio_text', transcript);
+                // Inject text back into Streamlit URL safely without CORS break
+                const url = new window.parent.URL(window.parent.location.href);
+                url.searchParams.set('speech_text', transcript);
                 window.parent.location.href = url.toString();
             };
 
             recognition.onend = function() {
-                // Keep the mic alive automatically forever (Continuous Loop)
-                recognition.start();
+                // Restart listening automatically loop
+                setTimeout(() => { recognition.start(); }, 400);
             };
-
-            // Automatically start microphone on page load
-            recognition.start();
         </script>
-    """, height=100)
+    """, height=120)
