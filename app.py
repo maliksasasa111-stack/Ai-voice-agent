@@ -44,7 +44,7 @@ else:
                     {"role": "system", "content": "You are a professional business voice receptionist. Keep responses short and friendly."},
                     {"role": "user", "content": user_text}
                 ],
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
             )
             
             ai_response = chat_completion.choices[0].message.content
